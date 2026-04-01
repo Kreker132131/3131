@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>AR Визитка - 3D кнопки с эффектом</title>
+
+<script src="/libs/aframe.min.js"></script>
+<script src="/libs/mindar-image-aframe.prod.js"></script>
+
+<style>
+body { 
+    margin: 0; 
+    overflow: hidden;
+    font-family: 'Roboto', sans-serif;
+}
+
+/* AR статус */
+#ar-status {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    background: rgba(0,0,0,0.8);
+    color: #4CAF50;
+    padding: 10px 20px;
+    border-radius: 30px;
+    font-size: 16px;
+    z-index: 10000;
+    border: 2px solid #4CAF50;
+    pointer-events: none;
+}
+
+/* Индикатор маркера */
+#marker-indicator {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(76, 175, 80, 0.95);
+    color: white;
+    padding: 8px 20px;
+    border-radius: 30px;
+    font-size: 14px;
+    z-index: 10000;
+    display: none;
+}
+
+/* Модальные окна */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 30000;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.modal-content {
+    background: linear-gradient(135deg, #1a2a3a 0%, #2c3e50 100%);
+    border-radius: 40px;
+    padding: 35px;
+    max-width: 380px;
+    width: 90%;
+    color: white;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transform: scale(0.9);
+    animation: scaleIn 0.3s ease forwards;
+}
+
+@keyframes scaleIn {
+    to { transform: scale(1); }
+}
+
+.modal-header {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 600;
+}
+
+.modal-header .category-icon {
+    font-size: 48px;
+    margin-bottom: 10px;
+    display: block;
+}
+
+.modal-body {
+    margin: 25px 0;
+}
+
+.modal-body p {
+    font-size: 18px;
+    line-height: 1.6;
+    color: rgba(255,255,255,0.9);
+    margin: 15px 0;
+}
+
+.product-card {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 25px;
+    padding: 20px;
+    margin: 20px 0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.product-card:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateX(10px);
+}
+
+.product-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #4ECDC4;
+    margin-bottom: 10px;
+}
+
+.product-price {
+    font-size: 32px;
+    color: #FFD93D;
+    font-weight: 700;
+}
+
+.product-desc {
+    color: rgba(255,255,255,0.7);
+    margin: 10px 0;
+}
+
+.website-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.website-item {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.website-item:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-5px);
+}
+
+.website-icon {
+    font-size: 36px;
+    margin-bottom: 10px;
+    display: block;
+}
+
+.website-name {
+    font-weight: 500;
+}
+
+.contact-list {
+    margin: 20px 0;
+}
+
+.contact-item {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 18px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.3s ease;
+    font-size: 18px;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.contact-item:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateX(10px);
+}
+
+.contact-icon {
+    font-size: 24px;
+    margin-right: 10px;
+    vertical-align: middle;
+}
+
+.modal-close {
+    background: linear-gradient(135deg, #FF6B6B, #FF8E8E);
+    border: none;
+    color: white;
+    padding: 15px 30px;
+    border-radius: 50px;
+    cursor: pointer;
+    margin-top: 20px;
+    width: 100%;
+    font-family: 'Roboto', sans-serif;
+    font-size: 18px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255,255,255,0.3);
+}
+
+.modal-close:hover {
+    transform: scale(1.02);
+    filter: brightness(1.1);
+}
+
+.category-badge {
+    display: inline-block;
+    padding: 8px 16px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 50px;
+    margin: 5px;
+    font-size: 16px;
+}
+#model-indicator {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 150, 255, 0.9);
+    color: white;
+    padding: 10px 25px;
+    border-radius: 30px;
+    font-size: 16px;
+    z-index: 10000;
+    display: none;
+    border: 2px solid #00ccff;
+}
+</style>
+</head>
+<body>
+
+<div id="ar-status">📱 Ищем маркер...</div>
+<div id="marker-indicator">✅ Маркер найден!</div>
+<div id="model-indicator">🪟 Модель отображается</div>
+<!-- Модальные окна в привычном дизайне -->
+<div id="modal-category" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span class="category-icon">📋</span>
+            <h3 style="color: #FF6B6B;">CATEGORIES</h3>
+        </div>
+        <div class="modal-body">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <span class="category-badge">🏠 Realty</span>
+                <span class="category-badge">🚗 Auto</span>
+                <span class="category-badge">📱 Electronics</span>
+                <span class="category-badge">👕 Clothing</span>
+            </div>
+            <p>Select category to view products:</p>
+            <div class="product-card" onclick="alert('Category: Realty')">
+                <div>🏠 Realty (24 items)</div>
+            </div>
+            <div class="product-card" onclick="alert('Category: Auto')">
+                <div>🚗 Auto (15 items)</div>
+            </div>
+            <div class="product-card" onclick="alert('Category: Electronics')">
+                <div>📱 Electronics (42 items)</div>
+            </div>
+        </div>
+        <button class="modal-close" onclick="document.getElementById('modal-category').style.display='none'">Close</button>
+    </div>
+</div>
+
+<div id="modal-product" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span class="category-icon">🛍️</span>
+            <h3 style="color: #4ECDC4;">PRODUCT</h3>
+        </div>
+        <div class="modal-body">
+            <div class="product-card">
+                <div class="product-title">AR Pro Smartphone</div>
+                <div class="product-price">$999</div>
+                <div class="product-desc">✅ 256GB, 5G, Triple camera</div>
+                <div class="product-desc">⭐ Rating: 4.8/5</div>
+                <div style="margin-top: 15px; display: flex; gap: 10px;">
+                    <span style="background: #4ECDC4; padding: 5px 15px; border-radius: 50px;">In stock</span>
+                    <span style="background: #FFD93D; padding: 5px 15px; border-radius: 50px;">Best seller</span>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 20px;">
+                <button onclick="alert('Product added to cart!')" style="background: #4ECDC4; border: none; color: white; padding: 12px 30px; border-radius: 50px; cursor: pointer; font-size: 18px;">
+                    🛒 Add to cart
+                </button>
+            </div>
+        </div>
+        <button class="modal-close" onclick="document.getElementById('modal-product').style.display='none'">Close</button>
+    </div>
+</div>
+
+<div id="modal-website" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span class="category-icon">🌐</span>
+            <h3 style="color: #45B7D1;">WEBSITE</h3>
+        </div>
+        <div class="modal-body">
+            <p>Our projects and resources:</p>
+            <div class="website-grid">
+                <div class="website-item" onclick="window.open('https://example.com/shop', '_blank')">
+                    <span class="website-icon">🛒</span>
+                    <span class="website-name">Online Store</span>
+                </div>
+                <div class="website-item" onclick="window.open('https://example.com/blog', '_blank')">
+                    <span class="website-icon">📝</span>
+                    <span class="website-name">Blog</span>
+                </div>
+                <div class="website-item" onclick="window.open('https://example.com/portfolio', '_blank')">
+                    <span class="website-icon">🎨</span>
+                    <span class="website-name">Portfolio</span>
+                </div>
+                <div class="website-item" onclick="window.open('https://example.com/support', '_blank')">
+                    <span class="website-icon">🎧</span>
+                    <span class="website-name">Support</span>
+                </div>
+            </div>
+            <p style="text-align: center; margin-top: 20px;">Main site: <strong>www.example.com</strong></p>
+        </div>
+        <button class="modal-close" onclick="document.getElementById('modal-website').style.display='none'">Close</button>
+    </div>
+</div>
+
+<div id="modal-contact" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span class="category-icon">📞</span>
+            <h3 style="color: #96CEB4;">CONTACT US</h3>
+        </div>
+        <div class="modal-body">
+            <div class="contact-list">
+                <div class="contact-item" onclick="window.open('https://t.me/username', '_blank')">
+                    <span class="contact-icon">📱</span> Telegram
+                </div>
+                <div class="contact-item" onclick="window.open('https://wa.me/79123456789', '_blank')">
+                    <span class="contact-icon">💬</span> WhatsApp
+                </div>
+                <div class="contact-item" onclick="window.location.href='tel:+79123456789'">
+                    <span class="contact-icon">📞</span> +7 (912) 345-67-89
+                </div>
+                <div class="contact-item" onclick="window.location.href='mailto:info@example.com'">
+                    <span class="contact-icon">✉️</span> info@example.com
+                </div>
+            </div>
+            <p style="text-align: center;">⏰ Working 24/7</p>
+        </div>
+        <button class="modal-close" onclick="document.getElementById('modal-contact').style.display='none'">Close</button>
+    </div>
+</div>
+
+<!-- AR сцена -->
+<a-scene
+    mindar-image="imageTargetSrc: markers/target.mind; autoStart: true; uiLoading: no; uiScanning: no; uiError: no;"
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false"
+    color-space="sRGB">
+
+  <a-assets>
+    <!-- Загружаем 3D модель окна -->
+    <a-asset-item id="window-model" src="models/window.glb"></a-asset-item>
+    <!-- Загружаем файл текстуры -->
+    <img id="texture_menu" src="img/texture_menu.jpg">
+  </a-assets>
+
+  <a-camera look-controls="enabled: false" wasd-controls-enabled="false" id="ar-camera"></a-camera>
+
+  <!-- Маркер -->
+  <a-entity mindar-image-target="targetIndex:0">
+
+    <!-- 3D модель окна вместо куба -->
+    <a-entity 
+        id="window-3d-model"
+        gltf-model="#window-model"
+        position="0 0 0"
+        scale="0.01 0.01 0.01"
+        rotation="0 -90 0"
+        >
+    </a-entity>
+<!-- animation="property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear" -->
+    <!-- Контейнер для кнопок -->
+    <a-entity id="buttons-container" position="0.7 0 0.2" rotation="0 -15 0">
+        <!-- Кнопка 1: CATEGORY (красная) -->
+        <a-entity id="btn-category" class="clickable" position="0 0.4 0">
+            <a-box width="0.5" height="0.16" depth="0.025" src="#texture_menu" material="metalness:0.3; roughness:0.4;" position="0 0 0"></a-box>
+            <a-text value="CATEGORY" font="fonts/Roboto-msdf.json" color="#000000" align="center" position="0 0 0.02" width="2"></a-text>
+        </a-entity>
+        
+        <!-- Кнопка 2: PRODUCT (бирюзовая) -->
+        <a-entity id="btn-product" class="clickable" position="0 0.1 0">
+            <a-box width="0.5" height="0.16" depth="0.025" src="#texture_menu" material="metalness:0.3; roughness:0.4;" position="0 0 0"></a-box>
+            <a-text value="PRODUCT" font="fonts/Roboto-msdf.json" color="#000000" align="center" position="0 0 0.02" width="2"></a-text>
+        </a-entity>
+        
+        <!-- Кнопка 3: WEBSITE (синяя) -->
+        <a-entity id="btn-website" class="clickable" position="0 -0.2 0">
+            <a-box width="0.5" height="0.16" depth="0.025" src="#texture_menu" material="metalness:0.3; roughness:0.4;" position="0 0 0"></a-box>
+            <a-text value="WEBSITE" font="fonts/Roboto-msdf.json" color="#000000" align="center" position="0 0 0.02" width="2"></a-text>
+        </a-entity>
+        
+        <!-- Кнопка 4: CONTACT (зеленая) -->
+        <a-entity id="btn-contact" class="clickable" position="0 -0.5 0">
+            <a-box width="0.5" height="0.16" depth="0.025" src="#texture_menu" material="metalness:0.3; roughness:0.4;" position="0 0 0"></a-box>
+            <a-text value="CONTACT" font="fonts/Roboto-msdf.json" color="#000000" align="center" position="0 0 0.02" width="2"></a-text>
+        </a-entity>
+    </a-entity>
+
+  </a-entity>
+
+  <a-light type="ambient" color="#ffffff" intensity="1.5"></a-light>
+  <a-light type="directional" color="#ffffff" intensity="2" position="1 2 1"></a-light>
+
+</a-scene>
+
+<script>
+const modalCategory = document.getElementById("modal-category")
+const modalProduct = document.getElementById("modal-product")
+const modalWebsite = document.getElementById("modal-website")
+const modalContact = document.getElementById("modal-contact")
+const arInfo = document.getElementById("ar-info")
+
+function closeModals(){
+    modalCategory.style.display="none"
+    modalProduct.style.display="none"
+    modalWebsite.style.display="none"
+    modalContact.style.display="none"
+}
+
+// Функция анимации нажатия - двигаем всю кнопку целиком
+function animateButtonPress(buttonEntity) {
+    if (!buttonEntity) return;
+
+    const originalPos = buttonEntity.getAttribute('position');
+
+    // небольшое смещение (как реальное нажатие)
+    const pressedZ = originalPos.z - 0.3;
+
+    // плавное нажатие
+    buttonEntity.setAttribute('animation__press', {
+        property: 'position',
+        to: `${originalPos.x} ${originalPos.y} ${pressedZ}`,
+        dur: 80,
+        easing: 'easeOutQuad'
+    });
+
+    // плавный возврат
+    buttonEntity.setAttribute('animation__release', {
+        property: 'position',
+        to: `${originalPos.x} ${originalPos.y} ${originalPos.z}`,
+        dur: 120,
+        delay: 80,
+        easing: 'easeOutElastic'
+    });
+}
+
+/* Обработчик касаний AR-кнопок */
+const camera = document.querySelector("#ar-camera")
+const scene = document.querySelector("a-scene")
+
+scene.addEventListener("loaded", () => {
+    console.log("Сцена загружена")
+    
+    const marker = document.querySelector('[mindar-image-target]')
+    
+    // Отслеживание маркера
+    marker.addEventListener('targetFound', () => {
+        console.log('Маркер найден!')
+        document.getElementById('ar-status').innerHTML = '✅ Маркер найден!'
+        document.getElementById('marker-indicator').style.display = 'block'
+        document.getElementById('model-indicator').style.display = 'block'
+        setTimeout(() => document.getElementById('marker-indicator').style.display = 'none', 2000)
+    })
+    
+    marker.addEventListener('targetLost', () => {
+        console.log('Маркер потерян')
+        document.getElementById('model-indicator').style.display = 'none'
+        document.getElementById('ar-status').innerHTML = '📱 Ищем маркер...'
+        closeModals()
+        if (arInfo) arInfo.setAttribute('value', 'Press the button')
+    })
+    
+    const raycaster = new THREE.Raycaster()
+    const mouse = new THREE.Vector2()
+
+    window.addEventListener("touchstart", (event) => {
+        const touch = event.touches[0]
+        if (!touch) return
+        
+        mouse.x = (touch.clientX / window.innerWidth) * 2 - 1
+        mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1
+
+        raycaster.setFromCamera(mouse, camera.object3D.children[0])
+
+        const objects = document.querySelectorAll(".clickable")
+        const threeObjects = Array.from(objects).map(el => el.object3D)
+        const intersects = raycaster.intersectObjects(threeObjects, true)
+
+        if(intersects.length > 0){
+            // Находим родительский элемент с классом clickable (саму кнопку)
+            let buttonEl = intersects[0].object.el
+            while (buttonEl && !buttonEl.classList.contains('clickable')) {
+                buttonEl = buttonEl.parentNode
+            }
+            
+            if (!buttonEl) return
+            
+            console.log("Нажата кнопка:", buttonEl.id)
+            
+            // Анимируем нажатие - двигается вся кнопка целиком
+            animateButtonPress(buttonEl)
+
+            // Обновляем информационную табличку
+            if (arInfo) {
+                if (buttonEl.id === "btn-category") arInfo.setAttribute('value', '📋 Categories')
+                if (buttonEl.id === "btn-product") arInfo.setAttribute('value', '🛍️ Product card')
+                if (buttonEl.id === "btn-website") arInfo.setAttribute('value', '🌐 Website')
+                if (buttonEl.id === "btn-contact") arInfo.setAttribute('value', '📞 Contacts')
+            }
+
+            // Открываем соответствующие модальные окна
+            setTimeout(() => {
+                if(buttonEl.id === "btn-category") modalCategory.style.display="flex"
+                if(buttonEl.id === "btn-product") modalProduct.style.display="flex"
+                if(buttonEl.id === "btn-website") modalWebsite.style.display="flex"
+                if(buttonEl.id === "btn-contact") modalContact.style.display="flex"
+            }, 3000);
+        }
+    })
+})
+
+// Закрытие модальных окон при клике на overlay
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.style.display = 'none';
+    });
+});
+
+// Закрытие по Escape
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        modalCategory.style.display = 'none';
+        modalProduct.style.display = 'none';
+        modalWebsite.style.display = 'none';
+        modalContact.style.display = 'none';
+    }
+});
+
+// Предотвращаем закрытие при клике на контент модалки
+document.querySelectorAll('.modal-content').forEach(content => {
+    content.addEventListener('click', (e) => e.stopPropagation());
+});
+</script>
+</body>
+</html>
